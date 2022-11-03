@@ -15,8 +15,8 @@ echo
 
 echo "Installing AWS extra packages for Linux 2..."
 echo -e $(sudo amazon-linux-extras install -y)
+echo -e $(sudo amazon-linux-extras install php7.2 -y)
 echo -e $(sudo yum install lamp-mariadb10.2-php7.2 -y)
-echo -e $(sudo yum install php7.2 -y)
 echo "Successfully installed AWS extra packages"
 
 # Update and install apache2
@@ -106,7 +106,6 @@ echo -e $(sudo cp /home/ec2-user/.htaccess /var/www/html/)
 echo -e $(sudo rm /home/ec2-user/.htaccess)
 echo -e $(sudo cp /home/ec2-user/httpd.conf /etc/httpd/conf/httpd.conf)
 echo "Fixed permalinks!"
-echo -e $(sudo systemctl reload httpd)
 echo -e $(sudo systemctl restart httpd)
 
 
