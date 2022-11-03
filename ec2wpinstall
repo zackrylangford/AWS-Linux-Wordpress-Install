@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# Script to install wordpress on ubuntu server
+
+# Ask for user to establish a database username and password for configuration
+
+read -p 'wordpress_db_name [wp_db]:' wordpress_db_name
+read -p 'wordpress_db_username:' wp_username 
+read -p 'db_root_password [only-alphanumeric]:' db_root_password
+echo
+
+# Update and install apache2
+echo "Installing apache" 
+echo -e $(sudo apt-get install apache2 -y) 
+echo -e $(sudo systemctl stop apache2) 
+echo -e $(sudo systemctl start apache2) 
+echo -e $(sudo systemctl enable apache2)
+echo "Apache installed successfully..."
+
+
+#Install MySQL 
+echo "Installing MySQL..."
+echo -e $(sudo apt-get install mysql-server -y)
+echo -e $(sudo systemctl stop mysql) 
+echo -e $(sudo systemctl start mysql)
+echo -e $(sudo systemctl enable mysql)
+echo "MySQL installed successfully..."
+
+#Install PHP and PHP Addons
+echo "Installing PHP and PHP extensions" 
+
+echo -e $(sudo apt-get install php -y)
+echo "Installed php successfully..."
+echo -e $(sudo apt-get install php-mysql -y)
+echo "Installed php-mysql successfully..."
+echo -e $(sudo apt-get install php-cgi -y)
+echo "Installed php-cgi successfully..."
+echo -e $(sudo apt-get install php-cli -y)
+echo "Installed php-cli successfully..."
+echo -e $(sudo apt-get install php-gd -y)
+echo "Installed php-gd successfully..."
+echo -e $(sudo apt-get install imagemagick -y)
+echo "Installed imagemagick successfully..." 
+echo -e $(sudo apt-get install php-imagick -y)
+echo "Installed imagick successfully..." 
+echo -e $(sudo apt-get install php-bcmath -y)
+echo "Installed php-bcmath successfully..." 
+echo -e $(sudo apt-get install php-curl -y)
+echo "Installed php-curl..."
+echo -e $(sudo apt-get install php-intl -y)
+echo "Installed php-intl..."
+echo -e $(sudo apt-get install php-json -y)
+echo "Installed php-json..."
+echo -e $(sudo apt-get install php-mbstring -y)
+echo "Installed php-mbstring..."
+echo -e $(sudo apt-get install php-xml -y)
+echo "Installed php-xml..."
+echo -e $(sudo apt-get install php-zip -y)
+echo "Installed php-zip..."
+
+echo "PHP and extensions successfully installed" 
+
+#Install Wordpress and create installation directory
+echo "Installing Wordpress and creating installation directory"
+echo -e $(wget https://wordpress.org/latest.zip)
+echo -e $(sudo apt-get install unzip -y)
+echo -e $(unzip latest.zip)
+echo -e $(sudo cp -r /home/azureuser/wordpress/* /var/www/html/)
+echo -e $(sudo chown -R www-data:www-data /var/www/html/)
+echo -e $(sudo chmod -R 755 /var/www/html/)
+echo -e $(sudo rm -rf /var/www/html/index.html)
+echo "Successfully installed Wordpress..." 
+
+
+
+#Configure Apache for Wordpress
+
+echo "Configuring Apache for Wordpress" 
+echo -e $(touch /home/azureuser/wordpress.conf.original)
+
+echo "
+<VirtualHost *:80>
+    DocumentRoot /var/www/html
+    <Directory /var/www/html>
+         Options FollowSymLinks
+         AllowOverride Limit Options FileInfo
+         DirectoryIndex index.php
+         Require all granted
+    </Directory>
+    <Directory /var/www/html/wp-content>
+         Options FollowSymLinks
+         Require all granted
+    </Directory>
+    </VirtualHost>" > /home/azureuser/wordpress.conf.original
+echo -e $(sudo cp /home/azureuser/wordpress.conf.original /etc/apache2/sites-available/wordpress.conf)
+echo -e $(sudo rm /home/azureuser/wordpress.conf.original)
+echo -e $(sudo a2ensite wordpress)
+echo -e $(sudo a2enmod rewrite)
+echo -e $(sudo systemctl restart apache2)
+echo "Apache configured successfully" 
+
+# Configure mysql database for wordpress
+echo "Configuring MySQL Database" 
+sudo mysql -u root -e "CREATE DATABASE $wordpress_db_name;"
+sudo mysql -u root -e "CREATE USER '$wp_username'@'%' IDENTIFIED BY '$db_root_password';"
+sudo mysql -u root -e "GRANT ALL PRIVILEGES on *.* to '$wp_username'@'%';"
+sudo mysql -u root -e "FLUSH PRIVILEGES;"
+
+echo "Database configured"
+
+## fix .htaccess file so that permalinks work correctly
+echo "Fixing Wordpress permalinks..."
+echo -e $(touch /home/azureuser/.htaccess)
+echo -e $(sudo rm /var/www/html/.htaccess)
+echo "
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>" > /home/azureuser/.htaccess
+echo -e $(sudo cp /home/azureuser/.htaccess /var/www/html/)
+echo -e $(sudo rm /home/azureuser/.htaccess)
+echo -e $(sudo cp /home/azureuser/wordpress-install/apache2.conf /etc/apache2/apache2.conf)
+echo "Fixed permalinks!"
+echo -e $(sudo systemctl reload apache2)
+echo -e $(sudo systemctl restart apache2)
+
+
+ 
+echo "Success!!" 
+
+
+#For future development, I want to add a script to install the SSL 
+# certificate for the site. 
+# Also, would like to have a feature that automatically creates a database password possibly?
+
+
+
