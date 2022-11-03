@@ -9,95 +9,76 @@ read -p 'wordpress_db_username:' wp_username
 read -p 'db_root_password [only-alphanumeric]:' db_root_password
 echo
 
+
+
+# Install AWS extra packages for Linux 2
+
+echo "Installing AWS extra packages for Linux 2..."
+echo -e $(sudo amazon-linux-extras install -y)
+echo -e $(sudo yum install lamp-mariadb10.2-php7.2 -y)
+echo -e $(sudo yum install php7.2 -y)
+echo "Successfully installed AWS extra packages"
+
 # Update and install apache2
 echo "Installing apache" 
-echo -e $(sudo apt-get install apache2 -y) 
-echo -e $(sudo systemctl stop apache2) 
-echo -e $(sudo systemctl start apache2) 
-echo -e $(sudo systemctl enable apache2)
+echo -e $(sudo yum install httpd -y) 
+echo -e $(sudo systemctl stop httpd) 
+echo -e $(sudo systemctl start httpd) 
+echo -e $(sudo systemctl enable httpd)
 echo "Apache installed successfully..."
 
-
-#Install MySQL 
-echo "Installing MySQL..."
-echo -e $(sudo apt-get install mysql-server -y)
-echo -e $(sudo systemctl stop mysql) 
-echo -e $(sudo systemctl start mysql)
-echo -e $(sudo systemctl enable mysql)
+# Update and install mysql
+echo "Installing mysql" 
+echo -e $(sudo yum install mariadb-server -y) 
+echo -e $(sudo systemctl start mariadb)
+echo -e $(sudo systemctl enable mariadb)
+echo -e $(sudo systemctl restart mariadb)
 echo "MySQL installed successfully..."
 
-#Install PHP and PHP Addons
-echo "Installing PHP and PHP extensions" 
 
-echo -e $(sudo apt-get install php -y)
-echo "Installed php successfully..."
-echo -e $(sudo apt-get install php-mysql -y)
-echo "Installed php-mysql successfully..."
-echo -e $(sudo apt-get install php-cgi -y)
+#Install PHP Addons
+
+echo -e $(sudo yum install php-cgi -y)
 echo "Installed php-cgi successfully..."
-echo -e $(sudo apt-get install php-cli -y)
+echo -e $(sudo yum install php-cli -y)
 echo "Installed php-cli successfully..."
-echo -e $(sudo apt-get install php-gd -y)
+echo -e $(sudo yum install php-gd -y)
 echo "Installed php-gd successfully..."
-echo -e $(sudo apt-get install imagemagick -y)
+echo -e $(sudo yum install imagemagick -y)
 echo "Installed imagemagick successfully..." 
 echo -e $(sudo apt-get install php-imagick -y)
 echo "Installed imagick successfully..." 
-echo -e $(sudo apt-get install php-bcmath -y)
+echo -e $(sudo yum install php-bcmath -y)
 echo "Installed php-bcmath successfully..." 
-echo -e $(sudo apt-get install php-curl -y)
+echo -e $(sudo yum install php-curl -y)
 echo "Installed php-curl..."
-echo -e $(sudo apt-get install php-intl -y)
+echo -e $(sudo yum install php-intl -y)
 echo "Installed php-intl..."
-echo -e $(sudo apt-get install php-json -y)
+echo -e $(sudo yum install php-json -y)
 echo "Installed php-json..."
-echo -e $(sudo apt-get install php-mbstring -y)
+echo -e $(sudo yum install php-mbstring -y)
 echo "Installed php-mbstring..."
-echo -e $(sudo apt-get install php-xml -y)
+echo -e $(sudo yum install php-xml -y)
 echo "Installed php-xml..."
-echo -e $(sudo apt-get install php-zip -y)
+echo -e $(sudo yum install php-zip -y)
 echo "Installed php-zip..."
 
-echo "PHP and extensions successfully installed" 
+echo "PHP extensions successfully installed" 
 
 #Install Wordpress and create installation directory
 echo "Installing Wordpress and creating installation directory"
 echo -e $(wget https://wordpress.org/latest.zip)
-echo -e $(sudo apt-get install unzip -y)
+echo -e $(sudo yum install unzip -y)
 echo -e $(unzip latest.zip)
-echo -e $(sudo cp -r /home/azureuser/wordpress/* /var/www/html/)
-echo -e $(sudo chown -R www-data:www-data /var/www/html/)
-echo -e $(sudo chmod -R 755 /var/www/html/)
-echo -e $(sudo rm -rf /var/www/html/index.html)
+echo -e $(sudo cp -r /home/ec2-user/wordpress/* /var/www/html/)
+echo -e $(sudo chown -R apache /var/www)
+echo -e $(sudo chgrp -R apache /var/www)
+echo -e $(sudo chmod -R 2755 /var/www)
+echo -e $(sudo find /var/www -type d -exec sudo chmod 2775 {} \;)
+echo -e $(sudo systemctl restart httpd)
 echo "Successfully installed Wordpress..." 
 
 
-
-#Configure Apache for Wordpress
-
-echo "Configuring Apache for Wordpress" 
-echo -e $(touch /home/azureuser/wordpress.conf.original)
-
-echo "
-<VirtualHost *:80>
-    DocumentRoot /var/www/html
-    <Directory /var/www/html>
-         Options FollowSymLinks
-         AllowOverride Limit Options FileInfo
-         DirectoryIndex index.php
-         Require all granted
-    </Directory>
-    <Directory /var/www/html/wp-content>
-         Options FollowSymLinks
-         Require all granted
-    </Directory>
-    </VirtualHost>" > /home/azureuser/wordpress.conf.original
-echo -e $(sudo cp /home/azureuser/wordpress.conf.original /etc/apache2/sites-available/wordpress.conf)
-echo -e $(sudo rm /home/azureuser/wordpress.conf.original)
-echo -e $(sudo a2ensite wordpress)
-echo -e $(sudo a2enmod rewrite)
-echo -e $(sudo systemctl restart apache2)
-echo "Apache configured successfully" 
 
 # Configure mysql database for wordpress
 echo "Configuring MySQL Database" 
@@ -110,7 +91,7 @@ echo "Database configured"
 
 ## fix .htaccess file so that permalinks work correctly
 echo "Fixing Wordpress permalinks..."
-echo -e $(touch /home/azureuser/.htaccess)
+echo -e $(touch /home/ec2-user/.htaccess)
 echo -e $(sudo rm /var/www/html/.htaccess)
 echo "
 <IfModule mod_rewrite.c>
@@ -120,13 +101,13 @@ RewriteRule ^index\.php$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.php [L]
-</IfModule>" > /home/azureuser/.htaccess
-echo -e $(sudo cp /home/azureuser/.htaccess /var/www/html/)
-echo -e $(sudo rm /home/azureuser/.htaccess)
-echo -e $(sudo cp /home/azureuser/wordpress-install/apache2.conf /etc/apache2/apache2.conf)
+</IfModule>" > /home/ec2-user/.htaccess
+echo -e $(sudo cp /home/ec2-user/.htaccess /var/www/html/)
+echo -e $(sudo rm /home/ec2-user/.htaccess)
+echo -e $(sudo cp /home/ec2-user/httpd.conf /etc/httpd/conf/httpd.conf)
 echo "Fixed permalinks!"
-echo -e $(sudo systemctl reload apache2)
-echo -e $(sudo systemctl restart apache2)
+echo -e $(sudo systemctl reload httpd)
+echo -e $(sudo systemctl restart httpd)
 
 
  
